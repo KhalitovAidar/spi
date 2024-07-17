@@ -15,7 +15,9 @@ import org.keycloak.storage.user.UserQueryProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 import org.openapitools.client.model.UserDto;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class CustomUserStorageProvider implements UserStorageProvider,
@@ -76,7 +78,10 @@ public class CustomUserStorageProvider implements UserStorageProvider,
         try {
             System.out.println("getUserByUsername");
             UserDto user = usersApi.usersHttpControllerGetUserByEmail(s);
-            return mapUser(realmModel, user);
+            System.out.println(user);
+            var map =  mapUser(realmModel, user);
+            System.out.println(map);
+            return map;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -101,12 +106,15 @@ public class CustomUserStorageProvider implements UserStorageProvider,
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realmModel, Map<String, String> map, Integer integer, Integer integer1) {
         System.out.println("searchForUserStream");
-        return Stream.of(new LegacyUser.Builder(ksession, realmModel, model, "khalitovaidar2404@gmail.com")
+        UserModel userModel = new LegacyUser.Builder(ksession, realmModel, model, "khalitovaidar2404@gmail.com")
                 .email("khalitovaidar2404@gmail.com")
                 .firstName("Айдар")
                 .lastName("Марсович")
                 .id("123123")
-                .build());
+                .roles(Set.of("admin"))
+                .build();
+        userModel.setEnabled(true);
+        return Stream.of(userModel);
     }
 
     @Override
@@ -118,20 +126,27 @@ public class CustomUserStorageProvider implements UserStorageProvider,
     @Override
     public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realmModel, String s, String s1) {
         System.out.println("searchForUserByUserAttributeStream");
-        return Stream.of(new LegacyUser.Builder(ksession, realmModel, model, "khalitovaidar2404@gmail.com")
+        UserModel userModel = new LegacyUser.Builder(ksession, realmModel, model, "khalitovaidar2404@gmail.com")
                 .email("khalitovaidar2404@gmail.com")
                 .firstName("Айдар")
                 .lastName("Марсович")
                 .id("123123")
-                .build());
+                .roles(Set.of("admin"))
+                .build();
+        userModel.setEnabled(true);
+        return Stream.of(userModel);
     }
 
     private UserModel mapUser(RealmModel realm, UserDto user) {
+        Set<String> roles = new HashSet<>();
+        roles.add("admin");
+
         UserModel userModel = new LegacyUser.Builder(ksession, realm, model, user.getEmail())
                 .email(user.getEmail())
                 .firstName(user.getName().getFirst())
                 .lastName(user.getName().getLast())
                 .id("123123")
+                .roles(roles)
                 .build();
         userModel.setEnabled(true);
         return userModel;

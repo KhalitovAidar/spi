@@ -1,30 +1,27 @@
 package online.agenta.model;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import lombok.ToString;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.SubjectCredentialManager;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.storage.adapter.AbstractUserAdapterFederatedStorage;
+import org.keycloak.storage.federated.UserFederatedStorageProvider;
 
 @ToString
 public class LegacyUser extends AbstractUserAdapterFederatedStorage {
 
-    private final String username;
+    private String username;
     private final String email;
     private final String firstName;
     private final String lastName;
     private final Date birthDate;
     private final String id;
+    private final Set<String> roles;
 
     private LegacyUser(KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel, String username,
-                       String email, String firstName, String lastName, Date birthDate, String id) {
+                       String email, String firstName, String lastName, Date birthDate, String id, Set<String> roles) {
         super(session, realm, storageProviderModel);
         this.username = username;
         this.email = email;
@@ -32,6 +29,7 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
         this.lastName = lastName;
         this.birthDate = birthDate;
         this.id = id;
+        this.roles = roles;
     }
 
     @Override
@@ -46,7 +44,7 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
 
     @Override
     public void setUsername(String s) {
-
+        this.username = s;
     }
 
     @Override
@@ -62,6 +60,24 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
     @Override
     public String getEmail() {
         return email;
+    }
+
+
+//    @Override
+//    public void setSingleAttribute(String name, String value) {
+//        this.setUsername(value);
+//    }
+
+    @Override
+    protected Set<RoleModel> getRoleMappingsInternal() {
+        Set<RoleModel> roleModels = new HashSet<>();
+        for (String roleName : roles) {
+            RoleModel role = realm.getRole(roleName);
+            if (role != null) {
+                roleModels.add(role);
+            }
+        }
+        return roleModels;
     }
 
     @Override
@@ -80,6 +96,8 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
         System.out.println("HUI ID" + name);
         return getId();
     }
+
+
 
     @Override
     public Map<String, List<String>> getAttributes() {
@@ -103,6 +121,7 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
         private String lastName;
         private Date birthDate;
         private String id;
+        private Set<String> roles = new HashSet<>();
 
         public Builder(KeycloakSession session, RealmModel realm, ComponentModel storageProviderModel, String username) {
             this.session = session;
@@ -136,9 +155,14 @@ public class LegacyUser extends AbstractUserAdapterFederatedStorage {
             return this;
         }
 
+        public Builder roles(Set<String> roles) {
+            this.roles = roles;
+            return this;
+        }
+
         public LegacyUser build() {
             return new LegacyUser(session, realm, storageProviderModel, username, email, firstName, lastName,
-                    birthDate, id);
+                    birthDate, id, roles);
 
         }
     }
