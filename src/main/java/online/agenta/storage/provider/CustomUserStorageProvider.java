@@ -32,11 +32,13 @@ public class CustomUserStorageProvider implements UserStorageProvider,
 
     @Override
     public boolean supportsCredentialType(String s) {
+        System.out.println("supportsCredentialType");
         return PasswordCredentialModel.TYPE.endsWith(s);
     }
 
     @Override
     public boolean isConfiguredFor(RealmModel realmModel, UserModel userModel, String s) {
+        System.out.println("isConfiguredFor");
         return supportsCredentialType(s);
     }
 
@@ -110,10 +112,9 @@ public class CustomUserStorageProvider implements UserStorageProvider,
                 .email("khalitovaidar2404@gmail.com")
                 .firstName("Айдар")
                 .lastName("Марсович")
-                .id("123123")
+                .id("6670b53b7bcb8a07a23ff249")
                 .roles(Set.of("admin"))
                 .build();
-        userModel.setEnabled(true);
         return Stream.of(userModel);
     }
 
@@ -130,25 +131,24 @@ public class CustomUserStorageProvider implements UserStorageProvider,
                 .email("khalitovaidar2404@gmail.com")
                 .firstName("Айдар")
                 .lastName("Марсович")
-                .id("123123")
+                .id("6670b53b7bcb8a07a23ff249")
                 .roles(Set.of("admin"))
                 .build();
-        userModel.setEnabled(true);
         return Stream.of(userModel);
     }
 
     private UserModel mapUser(RealmModel realm, UserDto user) {
         Set<String> roles = new HashSet<>();
         roles.add("admin");
-
-        UserModel userModel = new LegacyUser.Builder(ksession, realm, model, user.getEmail())
-                .email(user.getEmail())
-                .firstName(user.getName().getFirst())
-                .lastName(user.getName().getLast())
-                .id("123123")
+        System.out.println("mapUser 1");
+        UserModel userModel = new LegacyUser.Builder(ksession, realm, model, "khalitovaidar2404@gmail.com")
+                .email("khalitovaidar2404@gmail.com")
+                .firstName("Айдар")
+                .lastName("Марсович")
+                .id(user.getId())
                 .roles(roles)
                 .build();
-        userModel.setEnabled(true);
+        System.out.println("mapUser");
         return userModel;
     }
 
