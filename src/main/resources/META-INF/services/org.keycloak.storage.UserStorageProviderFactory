@@ -1,2 +1,1 @@
-# SPI class implementation
-online.agenta.adapter.CustomUserStorageProviderFactory
+org.keycloak.quickstart.readonly.PropertyFileUserStorageProviderFactory

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>online.agenta</groupId>
-  <artifactId>keycloak-provider</artifactId>
-  <name>keycloak-provider</name>
-  <version>1.0-SNAPSHOT</version>
-  <url>http://maven.apache.org</url>
+  <groupId>org.keycloak.quickstarts</groupId>
+  <artifactId>keycloak-quickstart-parent</artifactId>
+  <name>Keycloak Quickstart: user-storage-properties</name>
+  <version>25.0.1</version>
+  <description>User Storage SPI Simple Example</description>
   <build>
+    <finalName>legacy-plugin</finalName>
     <plugins>
       <plugin>
         <groupId>org.openapitools</groupId>
@@ -41,7 +42,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration />
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -56,48 +56,30 @@
     <dependency>
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-core</artifactId>
-      <version>25.0.0</version>
+      <version>25.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.keycloak</groupId>
       <artifactId>keycloak-server-spi</artifactId>
-      <version>25.0.0</version>
+      <version>25.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-server-spi-private</artifactId>
-      <version>25.0.0</version>
+      <artifactId>keycloak-model-storage</artifactId>
+      <version>25.0.1</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-services</artifactId>
-      <version>25.0.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.32</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>online.agenta.api</groupId>
-      <artifactId>keycloak-provider</artifactId>
+      <artifactId>legacy-plugin</artifactId>
       <version>1.0-SNAPSHOT</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/target/keycloak-provider-1.0-SNAPSHOT.jar</systemPath>
+      <systemPath>${project.basedir}/target/legacy-plugin.jar</systemPath>
     </dependency>
   </dependencies>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.keycloak>25.0.1</version.keycloak>
   </properties>
 </project>

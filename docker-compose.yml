@@ -9,8 +9,8 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     volumes:
-      - ./target/keycloak-provider-1.0-SNAPSHOT.jar:/opt/keycloak/providers/keycloak-provider-1.0-SNAPSHOT.jar
-    command: ["start-dev", "--log-level=DEBUG"]
+      - ./target/legacy-plugin.jar:/opt/keycloak/providers/legacy-plugin.jar
+    command: [ "start-dev", "--log-level=DEBUG" ]
     networks:
       - mynetwork
 
