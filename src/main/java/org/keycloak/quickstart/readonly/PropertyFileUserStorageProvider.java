@@ -1,5 +1,6 @@
 package org.keycloak.quickstart.readonly;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 import online.agenta.ApiException;
@@ -8,11 +9,7 @@ import org.keycloak.credential.CredentialInput;
 import org.keycloak.credential.CredentialInputUpdater;
 import org.keycloak.credential.CredentialInputValidator;
 import org.keycloak.credential.UserCredentialManager;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.SubjectCredentialManager;
-import org.keycloak.models.UserCredentialModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.models.credential.PasswordUserCredentialModel;
 import org.keycloak.storage.ReadOnlyException;
@@ -20,6 +17,7 @@ import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.adapter.AbstractUserAdapter;
 import org.keycloak.storage.user.UserLookupProvider;
+import org.keycloak.storage.user.UserQueryProvider;
 import org.openapitools.client.model.UserDto;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +30,7 @@ import org.openapitools.client.model.UserRequestValidateDto;
 public class PropertyFileUserStorageProvider implements
         UserStorageProvider,
         UserLookupProvider,
+        UserQueryProvider,
         CredentialInputValidator,
         CredentialInputUpdater {
     protected final KeycloakSession session;
@@ -129,6 +128,23 @@ public class PropertyFileUserStorageProvider implements
     @Override
     public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
 
+    }
+
+    @Override
+    public Stream<UserModel> searchForUserStream(RealmModel realm, String search, Integer firstResult, Integer maxResult) {
+        
+        return null;
+    }
+
+    @Override
+    public Stream<UserModel> getGroupMembersStream(RealmModel realmModel, GroupModel groupModel, Integer integer, Integer integer1) {
+        return null;
+    }
+
+
+    @Override
+    public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realmModel, String s, String s1) {
+        return null;
     }
 
     @Override
