@@ -1,6 +1,8 @@
 package org.keycloak.quickstart.readonly;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import online.agenta.ApiException;
@@ -11,7 +13,6 @@ import org.keycloak.credential.CredentialInputValidator;
 import org.keycloak.credential.UserCredentialManager;
 import org.keycloak.models.*;
 import org.keycloak.models.credential.PasswordCredentialModel;
-import org.keycloak.models.credential.PasswordUserCredentialModel;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
@@ -44,18 +45,33 @@ public class PropertyFileUserStorageProvider implements
     public UserModel getUserByUsername(RealmModel realm, String username) {
         try {
             UserDto userDto = client.usersHttpControllerGetUserByEmail(username);
-            return createAdapter(realm, userDto.getEmail());
+            return createAdapter(realm, userDto);
         } catch (Exception e) {
             log.error("Error while handling getUserByUsername", e);
             return null;
         }
     }
 
-    protected UserModel createAdapter(RealmModel realm, String username) {
+    protected UserModel createAdapter(RealmModel realm, UserDto user) {
         return new AbstractUserAdapter(session, realm, model) {
             @Override
             public String getUsername() {
-                return username;
+                return user.getEmail();
+            }
+
+            @Override
+            public String getFirstName() {
+                return user.getName().getFirst();
+            }
+
+            @Override
+            public String getLastName() {
+                return user.getName().getLast();
+            }
+
+            @Override
+            public String getEmail() {
+                return user.getEmail();
             }
 
             @Override
@@ -131,8 +147,64 @@ public class PropertyFileUserStorageProvider implements
     }
 
     @Override
-    public Stream<UserModel> searchForUserStream(RealmModel realm, String search, Integer firstResult, Integer maxResult) {
-        
+    public Stream<UserModel> searchForUserStream(RealmModel realmModel, Map<String, String> map, Integer firstResult, Integer maxResult) {
+        System.out.println("searchForUserStream");
+        System.out.println(map.keySet());
+        System.out.println(map.get("keycloak.session.realm.users.query.search"));
+        System.out.println(map.values());
+        System.out.println(firstResult);
+        System.out.println(maxResult);
+
+        List<UserDto> userDtoList;
+        StringBuilder filter = new StringBuilder();
+        String fields = "*";
+        String omit = "";
+        String sort = "";
+
+        if(map.get("keycloak.session.realm.users.query.include_service_account").equals("false")) {
+            String fullTextSearch = map.get("keycloak.session.realm.users.query.search");
+            userDtoList = client.list(
+                    ListRequestDTO.builder()
+                                .filter(null)
+                                .fields(fields)
+                                .omit(omit)
+                                .sort(sort)
+                                .q(fullTextSearch)
+                                .offset(firstResult)
+                                .limit(maxResult)
+                                .build()
+            );
+            return userDtoList.stream().map((user) -> createAdapter(realmModel, user));
+        }
+        else {
+            for(String key: map.keySet()) {
+                if (!key.equals("keycloak.session.realm.users.query.include_service_account")) {
+                    switch (key) {
+                        case "username", "email" -> filter.append("&email=%s".formatted(key));
+                        case "firstName" -> filter.append("&name.first=%s".formatted(key));
+                        case "lastName" -> filter.append("&name.last=%s".formatted(key));
+                    }
+                }
+            }
+
+            int indexToDelete = filter.indexOf("&");
+            if (indexToDelete != -1)
+                filter.deleteCharAt(indexToDelete);
+
+            userDtoList = client.list(
+                    ListRequestDTO.builder()
+                            .filter(filter.toString())
+                            .fields(fields)
+                            .omit(omit)
+                            .sort(sort)
+                            .q(null)
+                            .offset(firstResult)
+                            .limit(maxResult)
+                            .build()
+            );
+
+            return userDtoList.stream().map((user) -> createAdapter(realmModel, user));
+        }
         return null;
     }
 
