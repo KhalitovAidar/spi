@@ -1,8 +1,7 @@
 package org.keycloak.quickstart.readonly;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Stream;
 
 import online.agenta.ApiException;
@@ -19,12 +18,11 @@ import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.adapter.AbstractUserAdapter;
 import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryProvider;
-import org.openapitools.client.model.UserDto;
+import org.openapitools.client.model.*;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.agenta.api.UsersApi;
-import org.openapitools.client.model.UserRequestValidateDto;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -33,18 +31,16 @@ public class PropertyFileUserStorageProvider implements
         UserLookupProvider,
         UserQueryProvider,
         CredentialInputValidator,
-        CredentialInputUpdater {
+        CredentialInputUpdater
+    {
     protected final KeycloakSession session;
     protected final ComponentModel model;
-
     private final UsersApi client;
-
-    // UserLookupProvider methods
 
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         try {
-            UserDto userDto = client.usersHttpControllerGetUserByEmail(username);
+            User userDto = client.usersHttpControllerGetUserByEmail(username);
             return createAdapter(realm, userDto);
         } catch (Exception e) {
             log.error("Error while handling getUserByUsername", e);
@@ -52,8 +48,21 @@ public class PropertyFileUserStorageProvider implements
         }
     }
 
-    protected UserModel createAdapter(RealmModel realm, UserDto user) {
+    protected UserModel createAdapter(RealmModel realm, User user) {
         return new AbstractUserAdapter(session, realm, model) {
+            @Override
+            protected Set<RoleModel> getRoleMappingsInternal() {
+                return super.getRoleMappingsInternal();
+            }
+
+            @Override
+            public boolean hasRole(RoleModel role) {
+                log.debug("contains: {}", getAdminEmails().contains(user.getEmail()));
+                if (getAdminEmails().contains(user.getEmail()))
+                    return true;
+                return super.hasRole(role);
+            }
+
             @Override
             public String getUsername() {
                 return user.getEmail();
@@ -116,15 +125,20 @@ public class PropertyFileUserStorageProvider implements
 
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput input) {
-        if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel))
+        log.debug("isValid");
+        if (!supportsCredentialType(input.getType()) || !(input instanceof UserCredentialModel)) {
+            log.debug("gui");
             return false;
+        }
 
         UserRequestValidateDto userRequestValidateDto = new UserRequestValidateDto();
         userRequestValidateDto.setEmail(user.getUsername());
         userRequestValidateDto.setPassword(input.getChallengeResponse());
-
+        log.debug("userRequestValidateDto: {}", userRequestValidateDto);
         try {
+            log.debug("before usersHttpControllerValidate");
             client.usersHttpControllerValidate(userRequestValidateDto);
+            log.debug("after usersHttpControllerValidate");
             return true;
         } catch (ApiException e) {
             return false;
@@ -143,46 +157,60 @@ public class PropertyFileUserStorageProvider implements
 
     @Override
     public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
-
     }
 
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realmModel, Map<String, String> map, Integer firstResult, Integer maxResult) {
-        System.out.println("searchForUserStream");
-        System.out.println(map.keySet());
-        System.out.println(map.get("keycloak.session.realm.users.query.search"));
-        System.out.println(map.values());
-        System.out.println(firstResult);
-        System.out.println(maxResult);
+        String fullTextSearch = getFullTextSearch(map);
+        log.debug("fullTextSearch: {}", fullTextSearch);
+        String filter = getFilter(map);
+        log.debug("filter: {}", filter);
 
-        List<UserDto> userDtoList;
-        StringBuilder filter = new StringBuilder();
-        String fields = "*";
-        String omit = "";
-        String sort = "";
 
-        if(map.get("keycloak.session.realm.users.query.include_service_account").equals("false")) {
-            String fullTextSearch = map.get("keycloak.session.realm.users.query.search");
-            userDtoList = client.list(
-                    ListRequestDTO.builder()
-                                .filter(null)
-                                .fields(fields)
-                                .omit(omit)
-                                .sort(sort)
-                                .q(fullTextSearch)
-                                .offset(firstResult)
-                                .limit(maxResult)
-                                .build()
+        try {
+            log.debug("Call with args");
+            List200Response data = client.callList(
+                    filter,
+                    null,
+                    null,
+                    null,
+                    new BigDecimal(firstResult),
+                    new BigDecimal(maxResult),
+                    fullTextSearch
             );
-            return userDtoList.stream().map((user) -> createAdapter(realmModel, user));
+            log.debug("Received data: {}", data);
+            List<User> users = data.getData();
+            Stream<UserModel> userModelStream = users.stream().map((user) -> createAdapter(realmModel, user));
+            log.debug("Mapped users: {}", userModelStream);
+
+            return userModelStream;
+        } catch (ApiException e) {
+            log.error("Error while handling", e);
+            throw new RuntimeException(e);
         }
-        else {
+    }
+
+    private static String getFullTextSearch(Map<String, String> map) {
+        log.debug("FullTextSearch");
+        try {
+            return map.get("keycloak.session.realm.users.query.search");
+        } catch (NullPointerException e) {
+            return null;
+        }
+    }
+
+    private static String getFilter(Map<String, String> map) {
+
+        try {
+            log.debug("GetFilter: {}", map);
+            StringBuilder filter = new StringBuilder();
+
             for(String key: map.keySet()) {
                 if (!key.equals("keycloak.session.realm.users.query.include_service_account")) {
                     switch (key) {
-                        case "username", "email" -> filter.append("&email=%s".formatted(key));
-                        case "firstName" -> filter.append("&name.first=%s".formatted(key));
-                        case "lastName" -> filter.append("&name.last=%s".formatted(key));
+                        case "username", "email" -> filter.append("&email=%s".formatted(map.get(key)));
+                        case "firstName" -> filter.append("&name.first=%s".formatted(map.get(key)));
+                        case "lastName" -> filter.append("&name.last=%s".formatted(map.get(key)));
                     }
                 }
             }
@@ -191,28 +219,17 @@ public class PropertyFileUserStorageProvider implements
             if (indexToDelete != -1)
                 filter.deleteCharAt(indexToDelete);
 
-            userDtoList = client.list(
-                    ListRequestDTO.builder()
-                            .filter(filter.toString())
-                            .fields(fields)
-                            .omit(omit)
-                            .sort(sort)
-                            .q(null)
-                            .offset(firstResult)
-                            .limit(maxResult)
-                            .build()
-            );
-
-            return userDtoList.stream().map((user) -> createAdapter(realmModel, user));
+            return filter.toString();
+        } catch (Exception e) {
+            log.error("Error in getFilter", e);
+            throw e;
         }
-        return null;
     }
 
-    @Override
+        @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realmModel, GroupModel groupModel, Integer integer, Integer integer1) {
         return null;
     }
-
 
     @Override
     public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realmModel, String s, String s1) {
@@ -226,6 +243,14 @@ public class PropertyFileUserStorageProvider implements
 
     @Override
     public void close() {
+    }
 
+    private List<String> getAdminEmails() {
+        return List.of(
+            "khalitovaidar2404@gmail.com",
+            "adelkhalitov1@gmail.com",
+            "railhalitov02@gmail.com",
+            "pal@alternativa-kzn.ru"
+        );
     }
 }

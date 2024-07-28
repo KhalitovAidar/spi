@@ -15,7 +15,7 @@ services:
       - mynetwork
 
   app:
-    image: three
+    image: users
     ports:
       - "3000:3000"
     networks:
